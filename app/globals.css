@@ -1,0 +1,564 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Terminal palette */
+  --background: #000000;
+  --foreground: #00ff41;
+  --muted: #0a3d0a;
+  --border: rgba(0, 255, 65, 0.2);
+
+  /* Severity colors */
+  --red-deep: #7f001f;
+  --red-vivid: #ff0040;
+  --green: #00ff41;
+  --green-dim: #004d1a;
+  --green-mid: #00cc33;
+  --amber: #ff9900;
+  --white: #ffffff;
+
+  /* Shadcn compat */
+  --card: #000000;
+  --card-foreground: #00ff41;
+  --popover: #000000;
+  --popover-foreground: #00ff41;
+  --primary: #00ff41;
+  --primary-foreground: #000000;
+  --secondary: #0a3d0a;
+  --secondary-foreground: #00ff41;
+  --muted-foreground: #004d1a;
+  --accent: #0a3d0a;
+  --accent-foreground: #00ff41;
+  --destructive: #ff0040;
+  --destructive-foreground: #000000;
+  --input: rgba(0, 255, 65, 0.2);
+  --ring: #00ff41;
+  --radius: 0;
+
+  /* Sidebar */
+  --sidebar: #000000;
+  --sidebar-foreground: #00ff41;
+  --sidebar-primary: #00ff41;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #0a3d0a;
+  --sidebar-accent-foreground: #00ff41;
+  --sidebar-border: rgba(0, 255, 65, 0.2);
+  --sidebar-ring: #00ff41;
+}
+
+@theme inline {
+  --font-mono: var(--font-geist-mono), 'Courier New', monospace;
+  --font-pixel: var(--font-geist-pixel-square), var(--font-geist-mono), monospace;
+  --font-typewriter: var(--font-special-elite), 'Courier New', Courier, monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    box-sizing: border-box;
+    border-radius: 0 !important;
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+  ::selection {
+    background-color: #00ff41;
+    color: #000000;
+  }
+}
+
+/* ─── Font classes ─────────────────────────────────────── */
+.font-pixel {
+  font-family: var(--font-geist-pixel-square), var(--font-geist-mono), monospace;
+}
+
+.font-typewriter {
+  font-family: var(--font-special-elite), 'Courier New', Courier, monospace;
+}
+
+/* ─── Classified theme font overrides ───────────────────── */
+[data-theme="classified"] body {
+  font-family: var(--font-special-elite), 'Courier New', Courier, monospace;
+  cursor: default !important;
+}
+
+/* ─── Scanline overlay ─────────────────────────────────── */
+.scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 65, 0.03) 2px,
+    rgba(0, 255, 65, 0.03) 4px
+  );
+  pointer-events: none;
+}
+
+.scanlines-dense {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 1px,
+    rgba(0, 255, 65, 0.06) 1px,
+    rgba(0, 255, 65, 0.06) 2px
+  );
+  pointer-events: none;
+}
+
+.scanlines-red {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 0, 64, 0.04) 2px,
+    rgba(255, 0, 64, 0.04) 4px
+  );
+  pointer-events: none;
+}
+
+/* ─── CRT flicker animation ─────────────────────────────── */
+@keyframes crtFlicker {
+  0%, 100% { opacity: 1; }
+  41% { opacity: 1; }
+  42% { opacity: 0.8; }
+  43% { opacity: 1; }
+  45% { opacity: 0.9; }
+  46% { opacity: 1; }
+  78% { opacity: 1; }
+  79% { opacity: 0.85; }
+  80% { opacity: 1; }
+}
+
+.crt-flicker {
+  animation: crtFlicker 3s ease-in-out infinite;
+}
+
+/* ─── Noise texture overlay ─────────────────────────────── */
+.noise-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  mix-blend-mode: overlay;
+}
+
+/* ─── Grain texture ─────────────────────────────────────── */
+.grain-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  opacity: 0.15;
+  mix-blend-mode: overlay;
+}
+
+/* ─── Shake animation ───────────────────────────────────── */
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(-3px, -1px) rotate(-0.3deg); }
+  20% { transform: translate(3px, 1px) rotate(0.3deg); }
+  30% { transform: translate(-2px, 2px) rotate(-0.2deg); }
+  40% { transform: translate(2px, -1px) rotate(0.2deg); }
+  50% { transform: translate(-1px, 3px) rotate(-0.1deg); }
+  60% { transform: translate(3px, -2px) rotate(0.3deg); }
+  70% { transform: translate(-2px, 1px) rotate(-0.2deg); }
+  80% { transform: translate(1px, -3px) rotate(0.1deg); }
+  90% { transform: translate(-3px, 2px) rotate(-0.3deg); }
+}
+
+.animate-shake {
+  animation: shake 0.2s ease-in-out;
+}
+
+/* ─── Screen flash ──────────────────────────────────────── */
+@keyframes screenFlash {
+  0% { opacity: 0; background-color: #00ff41; }
+  20% { opacity: 0.7; background-color: #00ff41; }
+  40% { opacity: 0; background-color: #000000; }
+  60% { opacity: 0.15; background-color: #00ff41; }
+  100% { opacity: 0; }
+}
+
+.animate-screen-flash {
+  animation: screenFlash 0.15s ease forwards;
+}
+
+/* ─── Invert flash ──────────────────────────────────────── */
+@keyframes invertFlash {
+  0% { opacity: 0; }
+  20% { opacity: 0.2; }
+  50% { opacity: 0; }
+  70% { opacity: 0.1; }
+  100% { opacity: 0; }
+}
+
+.animate-invert-flash {
+  animation: invertFlash 0.3s ease forwards;
+}
+
+/* ─── Glitch text effect ────────────────────────────────── */
+@keyframes glitchShift {
+  0% { clip-path: inset(0 0 90% 0); transform: translate(-4px, 0); }
+  20% { clip-path: inset(30% 0 50% 0); transform: translate(4px, 0); }
+  40% { clip-path: inset(60% 0 20% 0); transform: translate(-2px, 0); }
+  60% { clip-path: inset(10% 0 80% 0); transform: translate(3px, 0); }
+  80% { clip-path: inset(70% 0 5% 0); transform: translate(-3px, 0); }
+  100% { clip-path: inset(0 0 90% 0); transform: translate(0, 0); }
+}
+
+.glitch-text {
+  position: relative;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.glitch-text::before {
+  color: #ff0040;
+  animation: glitchShift 0.3s infinite linear;
+  opacity: 0.7;
+}
+
+.glitch-text::after {
+  color: #00ffff;
+  animation: glitchShift 0.3s infinite linear reverse;
+  opacity: 0.5;
+}
+
+/* ─── Redaction mark animation ──────────────────────────── */
+@keyframes redactSweep {
+  0% { width: 0; }
+  100% { width: 100%; }
+}
+
+.redact-mark {
+  position: absolute;
+  height: 1.3em;
+  background: #000000;
+  animation: redactSweep 0.4s ease-out forwards;
+}
+
+/* ─── Horizontal jitter ─────────────────────────────────── */
+@keyframes hJitter {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  50% { transform: translateX(1px); }
+  75% { transform: translateX(-1px); }
+}
+
+.animate-jitter {
+  animation: hJitter 0.1s ease-in-out infinite;
+}
+
+/* ─── Repair sweep animation ────────────────────────────── */
+@keyframes repairSweep {
+  from {
+    transform: translateY(-100%);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 1;
+  }
+}
+
+/* ─── Blink cursor ─────────────────────────────────────── */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* ─── Paragraph block hover cursor ─────────────────────── */
+.paragraph-block {
+  cursor: help;
+}
+
+.paragraph-block-danger {
+  cursor: not-allowed;
+}
+
+/* ─── Scrollbar styling ─────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+::-webkit-scrollbar-thumb {
+  background: #00ff41;
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00cc33;
+}
+
+/* ─── Terminal text glow ───────────────────────────────── */
+.text-glow-green {
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.5), 0 0 20px rgba(0, 255, 65, 0.3), 0 0 40px rgba(0, 255, 65, 0.2);
+}
+
+.text-glow-red {
+  text-shadow: 0 0 10px rgba(255, 0, 64, 0.5), 0 0 20px rgba(255, 0, 64, 0.3), 0 0 40px rgba(255, 0, 64, 0.2);
+}
+
+.text-glow-amber {
+  text-shadow: 0 0 10px rgba(255, 153, 0, 0.5), 0 0 20px rgba(255, 153, 0, 0.3);
+}
+
+/* ─── Block character progress bar ─────────────────────── */
+.block-bar {
+  font-family: var(--font-geist-mono), monospace;
+  letter-spacing: -0.05em;
+}
+
+/* ─── Three column layout for experience ───────────────── */
+.experience-layout {
+  display: grid;
+  grid-template-columns: 180px 1fr 220px;
+  gap: 0;
+  min-height: 100vh;
+}
+
+@media (max-width: 1024px) {
+  .experience-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Redacted text overlay ─────────────────────────────── */
+.redacted-text {
+  position: relative;
+}
+
+.redacted-text::before {
+  content: '';
+  position: absolute;
+  top: 0.1em;
+  left: 0;
+  right: 0;
+  height: 1.1em;
+  background: repeating-linear-gradient(
+    90deg,
+    #000000 0px,
+    #000000 12px,
+    transparent 12px,
+    transparent 14px
+  );
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+/* ─── Brushstroke redaction effect ─────────────────────── */
+.brushstroke-redact {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000000 5%,
+    #000000 95%,
+    transparent 100%
+  );
+  height: 1.4em;
+  position: absolute;
+  top: 0;
+  transform: skewX(-2deg);
+}
+
+/* ─── Vertical progress indicator ──────────────────────── */
+.progress-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+/* ─── Classified theme CSS vars ─────────────────────────── */
+[data-theme="terminal"] {
+  --tc-bg: #000000;
+  --tc-fg: #00ff41;
+  --tc-dim: #004d1a;
+  --tc-accent: #ff0040;
+  --tc-border: rgba(0, 255, 65, 0.2);
+  --tc-cursor: crosshair;
+}
+
+[data-theme="classified"] {
+  --tc-bg: #f0ebe3;
+  --tc-fg: #1a1a1a;
+  --tc-dim: #4a4a4a;
+  --tc-accent: #c41e3a;
+  --tc-border: rgba(26, 26, 26, 0.15);
+  --tc-cursor: default;
+}
+
+/* ─── Paper texture (Classified) ────────────────────────── */
+.paper-texture {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)' opacity='0.06'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 300px 300px;
+}
+
+/* ─── Classified stamp ──────────────────────────────────── */
+.stamp {
+  font-family: var(--font-special-elite), 'Courier New', Courier, monospace;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  border: 3px solid currentColor;
+  display: inline-block;
+  padding: 2px 8px;
+  opacity: 0.85;
+  text-transform: uppercase;
+}
+
+.stamp-red {
+  color: #c41e3a;
+  border-color: #c41e3a;
+}
+
+.stamp-dark {
+  color: #1a1a1a;
+  border-color: #1a1a1a;
+}
+
+/* ─── Redaction bar (Classified) ────────────────────────── */
+.redact-bar {
+  display: inline;
+  background: #000000;
+  color: transparent;
+  user-select: none;
+  padding: 1px 2px;
+  border-radius: 0;
+}
+
+/* ─── Yellow highlighter ────────────────────────────────── */
+.highlight-yellow {
+  background: rgba(232, 197, 0, 0.45);
+  padding: 0 2px;
+}
+
+/* ─── Typewriter text animation ─────────────────────────── */
+@keyframes typewriterBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.typewriter-cursor::after {
+  content: '|';
+  animation: typewriterBlink 0.7s step-end infinite;
+}
+
+/* ─── Stamp slam animation ──────────────────────────────── */
+@keyframes stampSlam {
+  0% { transform: scale(2.5) rotate(-8deg); opacity: 0; }
+  40% { transform: scale(0.95) rotate(2deg); opacity: 0.95; }
+  60% { transform: scale(1.05) rotate(-1deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-3deg); opacity: 0; }
+}
+
+.animate-stamp-slam {
+  animation: stampSlam 1.4s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+/* ─── Coffee stain overlay ──────────────────────────────── */
+.coffee-stain {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(139,90,43,0.12) 0%, rgba(139,90,43,0.06) 40%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ─── Torn edge ──────────────────────────────────────────── */
+.torn-edge-bottom {
+  position: relative;
+}
+.torn-edge-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 4px,
+    #f0ebe3 4px,
+    #f0ebe3 6px,
+    transparent 6px,
+    transparent 9px,
+    #f0ebe3 9px,
+    #f0ebe3 10px
+  );
+}
+
+/* ─── Classified scrollbar ──────────────────────────────── */
+[data-theme="classified"] ::-webkit-scrollbar-track {
+  background: #e8e3db;
+}
+[data-theme="classified"] ::-webkit-scrollbar-thumb {
+  background: #4a4a4a;
+}
+[data-theme="classified"] ::-webkit-scrollbar-thumb:hover {
+  background: #1a1a1a;
+}
+
+/* ─── Document margin line ──────────────────────────────── */
+.doc-margin-line {
+  border-left: 2px solid rgba(196, 30, 58, 0.35);
+  padding-left: 1rem;
+}
+
+/* ─── Dot leaders ───────────────────────────────────────── */
+.dot-leaders {
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+}
+.dot-leaders::after {
+  content: '';
+  flex: 1;
+  border-bottom: 2px dotted currentColor;
+  opacity: 0.4;
+  margin: 0 4px;
+  position: relative;
+  top: -2px;
+}
+
+
