@@ -4,6 +4,7 @@ import { GeistPixelSquare } from "geist/font/pixel";
 import { Special_Elite } from "next/font/google";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import ThemeApplicator from "@/components/ThemeApplicator";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const specialElite = Special_Elite({ subsets: ["latin"], weight: "400", variable: "--font-special-elite" });
@@ -35,6 +36,7 @@ export default function RootLayout({
           <ThemeApplicator />
           {children}
         </LanguageProvider>
+        <Analytics />
       </body>
     </html>
   );
