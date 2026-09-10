@@ -1,8 +1,12 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import { analyzeText } from "@/lib/analyzer";
+import { ApiInputError, jsonError, readJsonObject } from "@/lib/api-security";
+import { MAX_ANALYSIS_CHARACTERS, MAX_ANALYSIS_SECTIONS } from "@/lib/analysis-limits";
 
 export const maxDuration = 60;
+
+const MAX_REQUEST_BYTES = 96_000;
 
 const VALIDATION_PROMPT = `You will receive a text. Determine if this is a Terms & Conditions document, privacy policy, legal agreement, end-user license agreement (EULA), or any kind of legal/contractual document. Answer ONLY with a JSON object: {"isLegal": true} or {"isLegal": false, "reason": "Brief explanation of what this text actually is"}. Be strict — marketing copy, blog posts, news articles, recipes, or any non-legal text should return false.`;
 
@@ -19,6 +23,7 @@ async function validateLegalText(text: string): Promise<{ isLegal: boolean; reas
       { role: "user", content: text.slice(0, 4000) },
     ],
     output: Output.object({ schema: ValidationSchema }),
+    maxOutputTokens: 128,
   });
   return {
     isLegal: output?.isLegal ?? true,
@@ -48,7 +53,7 @@ const ParagraphSchema = z.object({
 });
 
 const ResponseSchema = z.object({
-  clauses: z.array(ParagraphSchema),
+  clauses: z.array(ParagraphSchema).max(50),
 });
 
 function getSystemPrompt(language: string) {
@@ -72,19 +77,38 @@ Be honest and critical. Most T&C documents deserve high severity scores. Do not 
 }
 
 export async function POST(req: Request) {
-  const { text, isMultiSection, language = "en" } = await req.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await readJsonObject(req, MAX_REQUEST_BYTES);
+  } catch (error) {
+    if (error instanceof ApiInputError) return jsonError(error.message, error.status);
+    return jsonError("Invalid request", 400);
+  }
+
+  const { text } = body;
+  const language = body.language === "es" ? "es" : "en";
 
   // text can be a string (old single-text format) or array of strings (multi-section from URL)
-  const sections: string[] = Array.isArray(text) ? text : [text];
+  const sections: unknown[] = Array.isArray(text) ? text : [text];
 
-  if (sections.length === 0 || sections.some((s) => !s || typeof s !== "string" || s.trim().length < 20)) {
-    return Response.json({ error: "Invalid input" }, { status: 400 });
+  if (
+    sections.length === 0 ||
+    sections.length > MAX_ANALYSIS_SECTIONS ||
+    sections.some((section) => typeof section !== "string" || section.trim().length < 20)
+  ) {
+    return jsonError("Invalid input", 400);
+  }
+
+  const validatedSections = sections as string[];
+  const totalCharacters = validatedSections.reduce((sum, section) => sum + section.length, 0);
+  if (totalCharacters > MAX_ANALYSIS_CHARACTERS) {
+    return jsonError("Input is too large to analyze", 413);
   }
 
   try {
     // Step 1: validate the text is actually a legal document
     try {
-      const { isLegal, reason } = await validateLegalText(sections.join("\n\n").slice(0, 6000));
+      const { isLegal, reason } = await validateLegalText(validatedSections.join("\n\n").slice(0, 6000));
       if (!isLegal) {
         return Response.json({ error: "not_legal", reason }, { status: 422 });
       }
@@ -95,12 +119,13 @@ export async function POST(req: Request) {
     // Step 2: Analyze each section separately and collect all clauses
     const allParagraphs = [];
 
-    for (const section of sections) {
+    for (const section of validatedSections) {
       const { output: parsed } = await generateText({
         model: "openai/gpt-4o-mini",
         system: getSystemPrompt(language),
         messages: [{ role: "user", content: section }],
         output: Output.object({ schema: ResponseSchema }),
+        maxOutputTokens: 3_000,
       });
 
       if (parsed && parsed.clauses && parsed.clauses.length > 0) {
@@ -124,7 +149,7 @@ export async function POST(req: Request) {
     console.error("[analyze] AI failed, falling back to local analyzer:", err);
 
     // Fallback: use the keyword-based local analyzer on all sections combined
-    const combinedText = sections.join("\n\n");
+    const combinedText = validatedSections.join("\n\n");
     const paragraphs = analyzeText(combinedText, language);
     return Response.json({ paragraphs, source: "fallback" });
   }

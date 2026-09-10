@@ -10,6 +10,27 @@ export interface Section {
   level?: number; // heading level (1-6) if from a heading
 }
 
+export function compactSections(sections: Section[], maxSections: number): Section[] {
+  if (sections.length <= maxSections) return sections;
+
+  const groupSize = Math.ceil(sections.length / maxSections);
+  const compacted: Section[] = [];
+
+  for (let index = 0; index < sections.length; index += groupSize) {
+    const group = sections.slice(index, index + groupSize);
+    const [first, ...rest] = group;
+    compacted.push({
+      ...first,
+      content: [
+        first.content,
+        ...rest.map((section) => `${section.title}\n\n${section.content}`),
+      ].join("\n\n"),
+    });
+  }
+
+  return compacted;
+}
+
 function extractText(html: string): string {
   let text = html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
