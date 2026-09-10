@@ -1,64 +1,66 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseHtmlToSections } from "@/lib/parse-html";
+import { compactSections, parseHtmlToSections } from "@/lib/parse-html";
+import { ApiInputError, jsonError, readJsonObject } from "@/lib/api-security";
+import { fetchPublicText, SafeFetchError } from "@/lib/safe-url-fetch";
+import { MAX_ANALYSIS_CHARACTERS, MAX_ANALYSIS_SECTIONS } from "@/lib/analysis-limits";
 
-function isValidUrl(raw: string): boolean {
-  try {
-    const url = new URL(raw);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+export const runtime = "nodejs";
+
+const MAX_REQUEST_BYTES = 2_048;
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  const { url } = body as { url?: string };
-
-  if (!url || !isValidUrl(url)) {
-    return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
-  }
-
-  let response: Response;
+  let body: Record<string, unknown>;
   try {
-    response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; TermsReader/1.0; +https://github.com/vercel)",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-      },
-      signal: AbortSignal.timeout(10_000),
-    });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Fetch failed";
-    return NextResponse.json({ error: msg }, { status: 502 });
+    body = await readJsonObject(req, MAX_REQUEST_BYTES);
+  } catch (error) {
+    if (error instanceof ApiInputError) return jsonError(error.message, error.status);
+    return jsonError("Invalid request", 400);
+  }
+  const { url } = body;
+
+  if (typeof url !== "string" || url.length > 2_000) {
+    return jsonError("Invalid URL", 400);
   }
 
-  if (!response.ok) {
-    return NextResponse.json(
-      { error: `Remote server returned ${response.status}` },
-      { status: 502 }
-    );
+  let html: string;
+  try {
+    ({ body: html } = await fetchPublicText(url));
+  } catch (error) {
+    if (error instanceof SafeFetchError) {
+      if (error.code === "invalid_url" || error.code === "forbidden_target") {
+        return jsonError("URL is not allowed", 400);
+      }
+      if (error.code === "response_too_large") {
+        return jsonError("Remote document is too large", 413);
+      }
+      if (error.code === "unsupported_content") {
+        return jsonError("URL does not return readable HTML content", 422);
+      }
+      if (error.code === "timeout") {
+        return jsonError("Remote server timed out", 504);
+      }
+    }
+    return jsonError("Could not fetch that URL", 502);
   }
 
-  const contentType = response.headers.get("content-type") ?? "";
-  const isHtml = contentType.includes("text/html") || contentType.includes("text/plain");
-  if (!isHtml) {
-    return NextResponse.json(
-      { error: "URL does not return readable HTML content" },
-      { status: 422 }
-    );
-  }
+  const parsedSections = parseHtmlToSections(html);
+  const extractedCharacters = parsedSections.reduce((sum, section) => sum + section.content.length, 0);
 
-  const html = await response.text();
-  const sections = parseHtmlToSections(html);
-
-  if (sections.length === 0 || sections.reduce((sum, s) => sum + s.content.length, 0) < 100) {
+  if (parsedSections.length === 0 || extractedCharacters < 100) {
     return NextResponse.json(
       { error: "Could not extract enough text from that page." },
       { status: 422 }
     );
   }
 
-  return NextResponse.json({ sections });
+  if (extractedCharacters > MAX_ANALYSIS_CHARACTERS) {
+    return jsonError("Extracted document is too large to analyze", 413);
+  }
+
+  const sections = compactSections(parsedSections, MAX_ANALYSIS_SECTIONS);
+
+  return NextResponse.json(
+    { sections },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

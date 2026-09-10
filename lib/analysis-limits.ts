@@ -1,0 +1,2 @@
+export const MAX_ANALYSIS_SECTIONS = 6;
+export const MAX_ANALYSIS_CHARACTERS = 48_000;
